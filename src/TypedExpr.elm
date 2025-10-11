@@ -1,4 +1,4 @@
-module TypedExpr exposing (Context, TypedExpr(..), annotate, foldrTypedExpr, fromContext, fromTypedExpr, infer, substituteContext, substituteExpr)
+module TypedExpr exposing (Context, TypedExpr(..), annotate, fromContext, fromTypedExpr, infer, substituteContext, substituteExpr)
 
 import Dict exposing (Dict)
 import Expr exposing (Expr(..), Id, foldrExpr)

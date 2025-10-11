@@ -12,7 +12,7 @@ module Restrictions exposing
     )
 
 import List
-import Substitution exposing (Substitution(..), insert, substitute)
+import Substitution exposing (Substitution, substitute)
 import Type exposing (Type(..), fromType, hasVar, replaceVar)
 
 

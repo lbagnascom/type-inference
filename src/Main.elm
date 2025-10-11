@@ -1,11 +1,13 @@
-module Main exposing (Model, Msg(..), main)
+module Main exposing (Model, Msg(..), State, main)
 
 import Browser
+import Browser.Events as Events
 import Expr exposing (Expr, fromExpr)
 import ExprParser exposing (parse)
 import Html exposing (Html, button, div, h2, h3, input, label, li, ol, span, text, textarea, ul)
 import Html.Attributes exposing (for, id, style, type_, value)
 import Html.Events exposing (onClick, onInput)
+import Json.Decode as Decode
 import Rectify exposing (rectify)
 import Restrictions
     exposing
@@ -19,7 +21,7 @@ import Type exposing (Type, fromType)
 import TypedExpr
     exposing
         ( Context
-        , TypedExpr(..)
+        , TypedExpr
         , annotate
         , fromContext
         , fromTypedExpr
@@ -35,11 +37,30 @@ import TypedExpr
 
 main : Program () Model Msg
 main =
-    Browser.sandbox
-        { init = init
-        , update = update
+    Browser.element
+        { init = \_ -> ( init, Cmd.none )
+        , update = \msg model -> ( update msg model, Cmd.none )
         , view = view
+        , subscriptions = \_ -> Events.onKeyPress keyDecoder
         }
+
+
+keyDecoder : Decode.Decoder Msg
+keyDecoder =
+    Decode.map toDirection (Decode.field "key" Decode.string)
+
+
+toDirection : String -> Msg
+toDirection string =
+    case string of
+        "ArrowLeft" ->
+            Next
+
+        "ArrowRight" ->
+            Previous
+
+        _ ->
+            NoOp
 
 
 
@@ -96,7 +117,8 @@ init =
 
 
 type Msg
-    = Change String
+    = NoOp
+    | Change String
     | ToggleImplicitParens
     | Reset
     | Previous
@@ -209,6 +231,9 @@ update msg model =
         Previous ->
             { model | state = previous model.state }
 
+        NoOp ->
+            model
+
 
 
 -- VIEW
@@ -289,10 +314,6 @@ viewStep model =
         ]
         (case model.state of
             Parse input ->
-                let
-                    parseResult =
-                        parse input
-                in
                 [ h3 [] [ text "Escribí tu expresión" ]
                 , exprTextArea input
                 ]
@@ -300,6 +321,10 @@ viewStep model =
                             []
 
                         else
+                            let
+                                parseResult =
+                                    parse input
+                            in
                             case parseResult of
                                 Err _ ->
                                     [ span [] [ text "No se puede reconocer a qué término se corresponde." ] ]
