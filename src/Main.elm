@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), State, main)
+module Main exposing (Model, Msg(..), WizardStep, main)
 
 import Browser
 import Browser.Events as Events
@@ -67,7 +67,7 @@ toDirection string =
 -- MODEL
 
 
-type State
+type WizardStep
     = Parse String
     | Rectify
         { input : String
@@ -101,7 +101,7 @@ type State
 
 type alias Model =
     { showImplicitParens : Bool
-    , state : State
+    , state : WizardStep
     }
 
 
@@ -125,7 +125,7 @@ type Msg
     | Next
 
 
-next : State -> State
+next : WizardStep -> WizardStep
 next step =
     case step of
         Parse input ->
@@ -183,7 +183,7 @@ next step =
             step
 
 
-previous : State -> State
+previous : WizardStep -> WizardStep
 previous step =
     case step of
         Parse _ ->
