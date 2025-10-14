@@ -1,11 +1,11 @@
-module FreshNM exposing (..)
+module State exposing (State, lift, lift2, lift3)
 
 
-type alias FreshN a =
-    Int -> ( a, Int )
+type alias State a b =
+    b -> ( a, b )
 
 
-lift : (a -> b) -> FreshN a -> FreshN b
+lift : (a -> b) -> State a s -> State b s
 lift f g1 n =
     let
         ( res1, n1 ) =
@@ -14,7 +14,7 @@ lift f g1 n =
     ( f res1, n1 )
 
 
-lift2 : (a -> b -> c) -> FreshN a -> FreshN b -> FreshN c
+lift2 : (a -> b -> c) -> State a s -> State b s -> State c s
 lift2 f fnA fnB n =
     let
         ( res1, n1 ) =
@@ -26,7 +26,7 @@ lift2 f fnA fnB n =
     ( f res1 res2, n2 )
 
 
-lift3 : (a -> b -> c -> d) -> FreshN a -> FreshN b -> FreshN c -> FreshN d
+lift3 : (a -> b -> c -> d) -> State a s -> State b s -> State c s -> State d s
 lift3 f fnA fnB fnC n =
     let
         ( res1, n1 ) =

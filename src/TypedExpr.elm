@@ -2,9 +2,9 @@ module TypedExpr exposing (Context, TypedExpr(..), annotate, fromContext, fromTy
 
 import Dict exposing (Dict)
 import Expr exposing (Expr(..), Id, foldrExpr)
-import FreshNM exposing (FreshN, lift, lift2, lift3)
 import Restrictions exposing (Restrictions)
 import Set exposing (Set)
+import State exposing (State, lift, lift2, lift3)
 import Substitution exposing (Substitution, substitute)
 import Type exposing (Type(..), fromType)
 import UnicodeSmallDigit exposing (shrinkDigits)
@@ -97,7 +97,7 @@ annotate expr =
     ( context, typedExpr, n1 )
 
 
-annotateHelper : Expr -> FreshN TypedExpr
+annotateHelper : Expr -> State TypedExpr Int
 annotateHelper =
     let
         baseCase t n =
@@ -259,7 +259,7 @@ isIf expr =
             False
 
 
-infer : TypedExpr -> Context -> FreshN (Maybe ( Type, Restrictions ))
+infer : TypedExpr -> Context -> State (Maybe ( Type, Restrictions )) Int
 infer =
     let
         liftM =

@@ -127,7 +127,9 @@ fromExpr showImplicitParens =
         shrinkDigits
         (\id _ rec -> "(λ" ++ shrinkDigits id ++ ". " ++ rec ++ ")")
         (\e1 rec1 e2 rec2 ->
-            maybeParens rec1 ((isApp e1 && showImplicitParens) || isIf e1) ++ " " ++ maybeParens rec2 (isApp e2)
+            maybeParens rec1 ((isApp e1 && showImplicitParens) || isIf e1)
+                ++ " "
+                ++ maybeParens rec2 (isApp e2)
         )
         "true"
         "false"
@@ -136,12 +138,7 @@ fromExpr showImplicitParens =
         (\_ rec -> "succ(" ++ rec ++ ")")
         (\_ rec -> "pred(" ++ rec ++ ")")
         (\_ rec1 _ rec2 _ rec3 ->
-            "if "
-                ++ rec1
-                ++ " then "
-                ++ rec2
-                ++ " else "
-                ++ rec3
+            "if " ++ rec1 ++ " then " ++ rec2 ++ " else " ++ rec3
         )
 
 
