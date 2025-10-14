@@ -5,31 +5,20 @@ module WizardStep exposing
     , previous
     )
 
-import Expr exposing (Expr, fromExpr)
+import Expr exposing (Expr)
 import ExprParser exposing (parse)
-import Html exposing (Html, button, div, h2, h3, input, label, li, ol, span, text, textarea, ul)
-import Html.Attributes exposing (for, id, style, type_, value)
-import Html.Events exposing (onBlur, onClick, onFocus, onInput)
 import Rectify exposing (rectify)
 import Restrictions
     exposing
         ( Restrictions
-        , fromMguError
-        , fromRestrictions
-        , mgu
         )
-import Substitution exposing (fromSubstitution, substitute)
-import Type exposing (Type, fromType)
+import Type exposing (Type)
 import TypedExpr
     exposing
         ( Context
         , TypedExpr
         , annotate
-        , fromContext
-        , fromTypedExpr
         , infer
-        , substituteContext
-        , substituteExpr
         )
 
 
