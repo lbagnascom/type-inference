@@ -97,8 +97,7 @@ init =
 
 
 type Msg
-    = NoOp
-    | Change String
+    = Change String
     | ToggleImplicitParens
     | Reset
     | Previous
@@ -210,9 +209,6 @@ update msg model =
 
         Previous ->
             { model | state = previous model.state }
-
-        NoOp ->
-            model
 
 
 

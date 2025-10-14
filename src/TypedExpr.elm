@@ -1,7 +1,7 @@
 module TypedExpr exposing (Context, TypedExpr(..), annotate, fromContext, fromTypedExpr, infer, substituteContext, substituteExpr)
 
 import Dict exposing (Dict)
-import Expr exposing (Expr(..), Id, foldrExpr)
+import Expr exposing (Expr, Id, foldrExpr)
 import Restrictions exposing (Restrictions)
 import Set exposing (Set)
 import State exposing (State, lift, lift2, lift3)
