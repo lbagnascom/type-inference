@@ -35,7 +35,7 @@ fromContext c =
             Dict.toList c
                 |> List.map (\( id, t ) -> id ++ ":" ++ fromType t)
                 |> List.intersperse ", "
-                |> List.foldr (\x y -> x ++ y) ""
+                |> List.foldr (++) ""
     in
     "{" ++ res ++ "}"
 
@@ -64,21 +64,25 @@ freeExprVars : Expr -> Set Id
 freeExprVars =
     foldrExpr
         Set.singleton
-        (\id rec -> Set.remove id rec)
-        (\rec1 rec2 -> Set.union rec1 rec2)
+        Set.remove
+        Set.union
         Set.empty
         Set.empty
         identity
         Set.empty
         identity
         identity
-        (\rec1 rec2 rec3 -> Set.union rec1 (Set.union rec2 rec3))
+        (\rec1 rec2 rec3 ->
+            Set.union rec1 (Set.union rec2 rec3)
+        )
 
 
 exprContext : Expr -> ( Int, Context )
 exprContext expr =
     freeExprVars expr
-        |> Set.foldl (\x ( n, d ) -> ( n + 1, Dict.insert x (TVar n) d )) ( 1, Dict.empty )
+        |> Set.foldl
+            (\x ( n, d ) -> ( n + 1, Dict.insert x (TVar n) d ))
+            ( 1, Dict.empty )
 
 
 annotate : Expr -> ( Context, TypedExpr, Int )
@@ -95,17 +99,21 @@ annotate expr =
 
 annotateHelper : Expr -> FreshN TypedExpr
 annotateHelper =
+    let
+        baseCase t n =
+            ( t, n )
+    in
     foldrExpr
         (\id n -> ( TEVar id, n ))
         (\id fRec n -> lift (\rec -> TEAbs id (TVar n) rec) fRec (n + 1))
-        (\fRec1 fRec2 -> lift2 TEApp fRec1 fRec2)
-        (\n -> ( TEConstTrue, n ))
-        (\n -> ( TEConstFalse, n ))
-        (\fRec -> lift TEIsZero fRec)
-        (\n -> ( TEConstZero, n ))
-        (\fRec -> lift TESucc fRec)
-        (\fRec -> lift TEPred fRec)
-        (\fRec1 fRec2 fRec3 -> lift3 TEIf fRec1 fRec2 fRec3)
+        (lift2 TEApp)
+        (baseCase TEConstTrue)
+        (baseCase TEConstFalse)
+        (lift TEIsZero)
+        (baseCase TEConstZero)
+        (lift TESucc)
+        (lift TEPred)
+        (lift3 TEIf)
 
 
 foldrTypedExpr :
@@ -210,21 +218,25 @@ recrTypedExpr fVar fAbs fApp fTrue fFalse fIsZero fZero fSucc fPred fIf expr =
 
 fromTypedExpr : Bool -> TypedExpr -> String
 fromTypedExpr showImplicitParens =
+    let
+        recWithKeyword keyword _ rec =
+            keyword ++ "(" ++ rec ++ ")"
+    in
     recrTypedExpr
         shrinkDigits
         (\id t _ rec -> "(λ" ++ shrinkDigits id ++ ":" ++ fromType t ++ ". " ++ rec ++ ")")
         (\e1 rec1 e2 rec2 ->
-            maybeParens rec1 ((isApp e1 && showImplicitParens) || isIf e1) ++ " " ++ maybeParens rec2 (isApp e2)
+            maybeParens rec1 ((isApp e1 && showImplicitParens) || isIf e1)
+                ++ " "
+                ++ maybeParens rec2 (isApp e2)
         )
         "true"
         "false"
-        (\_ rec -> "isZero(" ++ rec ++ ")")
+        (recWithKeyword "isZero")
         "0"
-        (\_ rec -> "succ(" ++ rec ++ ")")
-        (\_ rec -> "pred(" ++ rec ++ ")")
-        (\_ rec1 _ rec2 _ rec3 ->
-            "if " ++ rec1 ++ " then " ++ rec2 ++ " else " ++ rec3
-        )
+        (recWithKeyword "succ")
+        (recWithKeyword "pred")
+        (\_ rec1 _ rec2 _ rec3 -> "if " ++ rec1 ++ " then " ++ rec2 ++ " else " ++ rec3)
 
 
 isApp : TypedExpr -> Bool
@@ -252,15 +264,24 @@ infer =
     let
         liftM =
             lift << Maybe.map
-    in
-    foldrTypedExpr
-        (\id ctx n -> ( Maybe.map (\t -> ( t, Restrictions.empty )) (Dict.get id ctx), n ))
-        (\id varType fRec ctx ->
+
+        baseCase tt _ n =
+            ( Just ( tt, Restrictions.empty ), n )
+
+        oneNatSubTerm tt fRec ctx =
+            liftM
+                (\( type1, rest1 ) -> ( tt, Restrictions.insert ( type1, TNat ) rest1 ))
+                (fRec ctx)
+
+        var id ctx n =
+            ( Maybe.map (\t -> ( t, Restrictions.empty )) (Dict.get id ctx), n )
+
+        abs id varType fRec ctx =
             liftM
                 (\( bodyType, r1 ) -> ( TAbs varType bodyType, r1 ))
                 (fRec (Dict.insert id varType ctx))
-        )
-        (\fRec1 fRec2 ctx n ->
+
+        app fRec1 fRec2 ctx n =
             (lift2 << Maybe.map2)
                 (\( type1, rest1 ) ( type2, rest2 ) ->
                     ( TVar n
@@ -272,36 +293,38 @@ infer =
                 (fRec1 ctx)
                 (fRec2 ctx)
                 (n + 1)
-        )
-        (\_ n -> ( Just ( TBool, Restrictions.empty ), n ))
-        (\_ n -> ( Just ( TBool, Restrictions.empty ), n ))
-        (\fRec ctx ->
-            liftM
-                (\( type1, rest1 ) -> ( TBool, Restrictions.insert ( type1, TNat ) rest1 ))
-                (fRec ctx)
-        )
-        (\_ n -> ( Just ( TNat, Restrictions.empty ), n ))
-        (\fRec ctx ->
-            liftM
-                (\( type1, rest1 ) -> ( TNat, Restrictions.insert ( type1, TNat ) rest1 ))
-                (fRec ctx)
-        )
-        (\fRec ctx ->
-            liftM
-                (\( type1, rest1 ) -> ( TNat, Restrictions.insert ( type1, TNat ) rest1 ))
-                (fRec ctx)
-        )
-        (\fRec1 fRec2 fRec3 ctx ->
-            (lift3 << Maybe.map3)
-                (\( type1, rest1 ) ( type2, rest2 ) ( type3, rest3 ) ->
-                    ( type2
-                    , Restrictions.union rest1 rest2
-                        |> Restrictions.union rest3
-                        |> Restrictions.insert ( type1, TBool )
-                        |> Restrictions.insert ( type2, type3 )
+
+        true =
+            baseCase TBool
+
+        false =
+            baseCase TBool
+
+        isZero =
+            oneNatSubTerm TBool
+
+        zero =
+            baseCase TNat
+
+        succ =
+            oneNatSubTerm TNat
+
+        pred =
+            oneNatSubTerm TNat
+
+        ifThenElse =
+            \fRec1 fRec2 fRec3 ctx ->
+                (lift3 << Maybe.map3)
+                    (\( type1, rest1 ) ( type2, rest2 ) ( type3, rest3 ) ->
+                        ( type2
+                        , Restrictions.union rest1 rest2
+                            |> Restrictions.union rest3
+                            |> Restrictions.insert ( type1, TBool )
+                            |> Restrictions.insert ( type2, type3 )
+                        )
                     )
-                )
-                (fRec1 ctx)
-                (fRec2 ctx)
-                (fRec3 ctx)
-        )
+                    (fRec1 ctx)
+                    (fRec2 ctx)
+                    (fRec3 ctx)
+    in
+    foldrTypedExpr var abs app true false isZero zero succ pred ifThenElse
