@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 import Expr exposing (Expr, Id, foldrExpr)
 import Restrictions exposing (Restrictions)
 import Set exposing (Set)
-import State exposing (State, lift, lift2, lift3)
+import State exposing (State, lift, lift2, lift3, new)
 import Substitution exposing (Substitution, substitute)
 import Type exposing (Type(..), fromType)
 import UnicodeSmallDigit exposing (shrinkDigits)
@@ -34,8 +34,7 @@ fromContext c =
         res =
             Dict.toList c
                 |> List.map (\( id, t ) -> id ++ ":" ++ fromType t)
-                |> List.intersperse ", "
-                |> List.foldr (++) ""
+                |> Utils.joinWithCommas
     in
     "{" ++ res ++ "}"
 
@@ -72,45 +71,39 @@ freeExprVars =
         Set.empty
         identity
         identity
-        (\rec1 rec2 rec3 ->
-            Set.union rec1 (Set.union rec2 rec3)
-        )
+        (\rec1 rec2 rec3 -> Set.union rec1 (Set.union rec2 rec3))
 
 
-exprContext : Expr -> ( Int, Context )
+exprContext : Expr -> ( Context, Int )
 exprContext expr =
     freeExprVars expr
         |> Set.foldl
-            (\x ( n, d ) -> ( n + 1, Dict.insert x (TVar n) d ))
-            ( 1, Dict.empty )
+            (\x ( d, n ) -> ( Dict.insert x (TVar n) d, n + 1 ))
+            ( Dict.empty, 1 )
 
 
 annotate : Expr -> ( Context, TypedExpr, Int )
 annotate expr =
     let
-        ( n, context ) =
+        ( context, n0 ) =
             exprContext expr
 
         ( typedExpr, n1 ) =
-            annotateHelper expr n
+            annotateHelper expr n0
     in
     ( context, typedExpr, n1 )
 
 
 annotateHelper : Expr -> State TypedExpr Int
 annotateHelper =
-    let
-        baseCase t n =
-            ( t, n )
-    in
     foldrExpr
-        (\id n -> ( TEVar id, n ))
+        (\id -> new (TEVar id))
         (\id fRec n -> lift (\rec -> TEAbs id (TVar n) rec) fRec (n + 1))
         (lift2 TEApp)
-        (baseCase TEConstTrue)
-        (baseCase TEConstFalse)
+        (new TEConstTrue)
+        (new TEConstFalse)
         (lift TEIsZero)
-        (baseCase TEConstZero)
+        (new TEConstZero)
         (lift TESucc)
         (lift TEPred)
         (lift3 TEIf)
@@ -265,16 +258,16 @@ infer =
         liftM =
             lift << Maybe.map
 
-        baseCase tt _ n =
-            ( Just ( tt, Restrictions.empty ), n )
+        baseCase tt _ =
+            new (Just ( tt, Restrictions.empty ))
 
         oneNatSubTerm tt fRec ctx =
             liftM
                 (\( type1, rest1 ) -> ( tt, Restrictions.insert ( type1, TNat ) rest1 ))
                 (fRec ctx)
 
-        var id ctx n =
-            ( Maybe.map (\t -> ( t, Restrictions.empty )) (Dict.get id ctx), n )
+        var id ctx =
+            new (Maybe.map (\t -> ( t, Restrictions.empty )) (Dict.get id ctx))
 
         abs id varType fRec ctx =
             liftM

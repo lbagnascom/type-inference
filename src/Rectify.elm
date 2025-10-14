@@ -3,7 +3,7 @@ module Rectify exposing (rectify)
 import Expr exposing (Expr(..), Id, foldrExpr, recrExpr)
 import Multiset exposing (Multiset)
 import Set exposing (Set)
-import State exposing (State, lift, lift2, lift3)
+import State exposing (State, lift, lift2, lift3, new)
 import String exposing (fromInt)
 import Utils exposing (until)
 
@@ -55,7 +55,7 @@ renameVar oldId newId =
 rectifyHelper : Expr -> Set Id -> State Expr (Multiset Id)
 rectifyHelper =
     foldrExpr
-        (\id _ boundVars -> ( Var id, boundVars ))
+        (\id _ -> new (Var id))
         (\id fRec freeVars boundVars ->
             if Multiset.count id boundVars == 1 && not (Set.member id freeVars) then
                 lift (Abs id) (fRec freeVars) boundVars

@@ -13,6 +13,7 @@ import Type
         , foldType
         , fromType
         )
+import Utils
 
 
 type Substitution
@@ -21,10 +22,7 @@ type Substitution
 
 empty : Substitution
 empty =
-    Substitution
-        (\n ->
-            TVar n
-        )
+    Substitution TVar
 
 
 substitute : Substitution -> Type -> Type
@@ -55,7 +53,6 @@ fromSubstitution (Substitution s) n =
             List.range 1 (n - 1)
                 |> List.filter (\k -> TVar k /= s k)
                 |> List.map (\k -> fromType (TVar k) ++ "≔" ++ fromType (s k))
-                |> List.intersperse ", "
-                |> List.foldr (\s1 s2 -> s1 ++ s2) ""
+                |> Utils.joinWithCommas
     in
     "{" ++ res ++ "}"

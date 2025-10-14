@@ -14,6 +14,7 @@ module Restrictions exposing
 import List
 import Substitution exposing (Substitution, substitute)
 import Type exposing (Type(..), fromType, hasVar, replaceVar)
+import Utils
 
 
 type alias Restriction =
@@ -130,7 +131,6 @@ fromRestrictions rs =
     let
         res =
             List.map fromRestriction rs
-                |> List.intersperse ", "
-                |> List.foldr (\s1 s2 -> s1 ++ s2) ""
+                |> Utils.joinWithCommas
     in
     "{" ++ res ++ "}"

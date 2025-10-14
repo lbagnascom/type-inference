@@ -1,4 +1,4 @@
-module Utils exposing (maybeParens, until)
+module Utils exposing (joinWithCommas, maybeParens, until)
 
 
 until : (a -> Bool) -> (a -> a) -> a -> a
@@ -17,3 +17,9 @@ maybeParens s b =
 
     else
         s
+
+
+joinWithCommas : List String -> String
+joinWithCommas xs =
+    List.intersperse ", " xs
+        |> List.foldr (++) ""
