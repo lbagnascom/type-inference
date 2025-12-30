@@ -2,8 +2,8 @@ module Main exposing (Model, Msg(..), main)
 
 import Browser
 import Browser.Events as Events
-import Expr exposing (fromExpr)
 import ExprParser exposing (parse)
+import ExprView exposing (viewExpr, highlightParens)
 import Html exposing (Html, button, div, h2, h3, input, label, li, ol, span, text, textarea, ul)
 import Html.Attributes exposing (for, id, style, type_, value)
 import Html.Events exposing (onBlur, onClick, onFocus, onInput)
@@ -28,6 +28,7 @@ import TypedExpr
         , substituteExpr
         )
 import WizardStep exposing (WizardStep(..), initialStep, next, previous)
+import ExprView exposing (highlightParens)
 
 
 
@@ -181,7 +182,7 @@ viewStep showParens step =
 
                             Ok parsedExpr ->
                                 [ text "El término es"
-                                , stepDiv [ text <| fromExpr showParens parsedExpr ]
+                                , stepDiv [ viewExpr showParens parsedExpr ]
                                 , stepFooter [ stepStateButton "Empezar" Next ]
                                 ]
                    )
@@ -195,9 +196,9 @@ viewStep showParens step =
                 ]
             , div [ style "margin-bottom" "12px" ] [ text "Siempre podemos rectificar un término a través de α-renombres." ]
             , text "Término inicial"
-            , stepDiv [ text <| fromExpr showParens parsedExpr ]
+            , stepDiv [ viewExpr showParens parsedExpr ]
             , div [ style "margin-top" "12px" ] [ text "Término rectificado" ]
-            , stepDiv [ text <| fromExpr showParens (rectify parsedExpr) ]
+            , stepDiv [ viewExpr showParens (rectify parsedExpr) ]
             , stepFooter
                 [ stepStateButton "Atrás" Previous
                 , stepStateButton "Siguiente" Next
@@ -220,8 +221,8 @@ viewStep showParens step =
                 ]
             , text "Resultado"
             , stepDiv
-                [ div [] [ text <| "M₀ = " ++ fromTypedExpr showParens annotatedExpr ]
-                , div [] [ text <| "Γ₀ = " ++ fromContext context ]
+                [ div [] [ highlightParens ("M₀ = " ++ fromTypedExpr showParens annotatedExpr) ]
+                , div [] [ highlightParens ("Γ₀ = " ++ fromContext context) ]
                 ]
             , stepFooter
                 [ stepStateButton "Atrás" Previous
@@ -248,13 +249,13 @@ viewStep showParens step =
                     [ h3 [] [ text "3. Calcular el conjunto de restricciones" ]
                     , text "Entrada"
                     , stepDiv
-                        [ div [] [ text <| "M₀ = " ++ fromTypedExpr showParens annotatedExpr ]
-                        , div [] [ text <| "Γ₀ = " ++ fromContext context ]
+                        [ div [] [ highlightParens ("M₀ = " ++ fromTypedExpr showParens annotatedExpr) ]
+                        , div [] [ highlightParens ("Γ₀ = " ++ fromContext context) ]
                         ]
                     , text "Resultado"
                     , stepDiv
-                        [ div [] [ text <| "τ = " ++ fromType exprType ]
-                        , div [] [ text <| "E = " ++ fromRestrictions restrictions ]
+                        [ div [] [ highlightParens ("τ = " ++ fromType exprType) ]
+                        , div [] [ highlightParens ("E = " ++ fromRestrictions restrictions) ]
                         ]
                     , stepFooter
                         [ stepStateButton "Atrás" Previous
@@ -298,18 +299,18 @@ viewStep showParens step =
                         ]
                     , div [] [ text "Resultado" ]
                     , stepDiv
-                        [ text <| "S = MGU(E) = " ++ fromSubstitution substitution inferLastFreshN
+                        [ highlightParens ("S = MGU(E) = " ++ fromSubstitution substitution inferLastFreshN)
                         ]
                     , div
                         [ style "margin-top" "16px", style "margin-bottom" "8px" ]
                         [ text "Por lo tanto, el término es tipable y su juicio más general es" ]
                     , stepDiv
-                        [ text <|
-                            fromContext (substituteContext substitution context)
+                        [ highlightParens
+                            (fromContext (substituteContext substitution context)
                                 ++ " ⊢ "
                                 ++ fromTypedExpr showParens (substituteExpr substitution annotatedExpr)
                                 ++ " : "
-                                ++ fromType (substitute substitution exprType)
+                                ++ fromType (substitute substitution exprType))
                         ]
                     , stepFooter
                         [ stepStateButton "Atrás" Previous
